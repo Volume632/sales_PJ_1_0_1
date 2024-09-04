@@ -1,0 +1,25 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <title>Home</title>
+</head>
+<body>
+    <header>
+        <div class="register-section">
+            <h2>Register</h2>
+            <ul>
+                <li><a href="{% url 'register' %}"><i class="fas fa-user-plus"></i> Sign Up</a></li>
+                <li><a href="{% url 'login' %}"><i class="fas fa-sign-in-alt"></i> Login</a></li>
+            </ul>
+        </div>
+    </header>
+    <main>
+        <h1>Welcome in Milwaukee sales analysis</h1>
+        <!-- Your content here -->
+    </main>
+</body>
+</html>
