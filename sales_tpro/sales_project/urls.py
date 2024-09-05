@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.urls import path
-from sales import views  # Импортируем views из приложения sales
+from sales_project import views  # Импортируем views из приложения sales
 from django.contrib.auth import views as auth_views
 
 urlpatterns = [
