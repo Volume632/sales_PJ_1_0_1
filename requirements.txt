@@ -11,3 +11,6 @@ tzdata==2024.1
 flask==3.0.3
 Werkzeug==3.0.4
 psycopg2-binary
+dj-database-url
+django-environ
+gunicorn

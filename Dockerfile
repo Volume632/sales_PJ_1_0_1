@@ -11,6 +11,7 @@ COPY . .
 
 WORKDIR /app/sales_tpro
 
-EXPOSE 8000
+ENV DJANGO_SETTINGS_MODULE=sales_tpro.settings
 
-CMD ["/bin/sh", "run.sh"]
+# Выполняем миграции и запускаем сервер с gunicorn
+CMD ["sh", "-c", "python manage.py migrate && gunicorn sales_tpro.wsgi:application --bind 0.0.0.0:8000"]
