@@ -8,7 +8,9 @@ from django.http import HttpResponse
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth import login, logout
 from django.contrib.auth.forms import UserCreationForm
-
+from .utils import predict_sales
+import pandas as pd
+from sales_project.predictor import predict_sales
 
 def home(request):
     return render(request, 'home.html')
@@ -104,3 +106,15 @@ def login_view(request):
     else:
         form = AuthenticationForm()
     return render(request, 'registration/login.html', {'form': form})
+
+def forecast_sales_view(request):
+    if request.method == 'POST':
+        form = SalesFileForm(request.POST, request.FILES)
+        if form.is_valid():
+            sales_file = request.FILES['file']
+            data = pd.read_excel(sales_file)
+            forecast = predict_sales(data)
+            # Передайте прогноз в шаблон или сохраните
+    else:
+        form = SalesFileForm()
+    return render(request, 'sales/forecast_sales.html', {'form': form})

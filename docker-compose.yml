@@ -1,17 +1,21 @@
-version: '3.8'
-services:
-  web:
-    build: .
-    command:  flask run --host=0.0.0.0
-    ports:
-      - "5000:5000"
-    volumes:
-      - .:/app
-    environment:
-      FLASK_APP: app.py
-  db:
-    image: postgres:13
-    environment:
-      POSTGRES_DB: mydatabase
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
+backend-1:
+  build: .
+  image: sales:0.1
+  restart: always
+  environment:
+    DJANGO_DEBUG: 0  # 0 - disable, 1 - enable
+    DJANGO_SUPERUSER_EMAIL: admin@example.com
+    DJANGO_SUPERUSER_USERNAME: admin
+    DJANGO_SUPERUSER_PASSWORD: admin_password
+  ports:
+    - "8000:8000"
+
+db:
+  image: postgres:16.2
+  restart: always
+  environment:
+    POSTGRES_DB: mydatabase
+    POSTGRES_USER: user
+    POSTGRES_PASSWORD: password
+  volumes:
+    - "./compose/pg_data:/var/lib/postgresql/data"

@@ -1,5 +1,8 @@
 import pandas as pd
 from .models import SalesRecord, Product, Supplier
+from sales_project.predictor import predict_sales
+
+
 
 def import_sales_data(file_path):
     # Read the Excel file
