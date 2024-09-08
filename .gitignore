@@ -154,3 +154,5 @@ cython_debug/
 db.sqlite3
 .idea
 media/
+sales_files
+supplier_files
