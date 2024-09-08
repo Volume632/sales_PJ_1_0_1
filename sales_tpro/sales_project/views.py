@@ -11,6 +11,10 @@ from django.contrib.auth.forms import UserCreationForm
 from .utils import predict_sales
 import pandas as pd
 from sales_project.predictor import predict_sales
+from .models import SalesFile, SupplierFile
+import logging
+from django.core.exceptions import ValidationError
+from sales_project.models import Product, SalesRecord
 
 def home(request):
     return render(request, 'home.html')
@@ -68,13 +72,54 @@ def upload_supplier_file(request):
         form = SupplierFileForm()
     return render(request, 'sales/upload_supplier.html', {'form': form})
 
+
+logger = logging.getLogger(__name__)
+
 def abc_xyz_analysis(request):
-    # Здесь должен быть код, выполняющий ABC-XYZ анализ.
-    # Например, можно передать данные в шаблон для отображения
+    # Получаем все данные о продажах
+    sales_records = SalesRecord.objects.select_related('product').all()
+
+    # Преобразуем данные в DataFrame для анализа
+    sales_data = []
+    for record in sales_records:
+        sales_data.append({
+            'product_id': record.product.id,  # Используем 'product_id'
+            'product_name': record.product.name,
+            'price': record.product.price1 or record.product.price2,
+            'period': record.period,
+            'quantity': record.quantity
+        })
+
+    df = pd.DataFrame(sales_data)
+
+    # Выводим структуру DataFrame для отладки
+    print(df.head())
+    print(df.columns)
+
+    # Проверяем наличие всех необходимых столбцов
+    required_columns = ['product_id', 'product_name', 'price', 'period', 'quantity']
+    for column in required_columns:
+        if column not in df.columns:
+            raise ValueError(f"Неверная структура данных: отсутствует столбец '{column}'.")
+
+    # Приведение типов
+    df['quantity'] = pd.to_numeric(df['quantity'], errors='coerce')
+    df['price'] = pd.to_numeric(df['price'], errors='coerce')
+    df.dropna(subset=['quantity', 'price'], inplace=True)
+
+    # ABC анализ: группировка по продукту и подсчёт общего объёма продаж
+    abc_data = df.groupby('product_id').agg({'quantity': 'sum', 'price': 'mean'}).reset_index()
+
+    # XYZ анализ: группировка по периоду
+    xyz_data = df.groupby(['product_id', 'period']).agg({'quantity': 'sum'}).reset_index()
+
+    # Передаем данные в шаблон
     context = {
-        'analysis_results': [],  # Добавьте сюда результаты анализа
+        'abc_data': abc_data,
+        'xyz_data': xyz_data
     }
     return render(request, 'abc_xyz_analysis.html', context)
+
 
 def export_forecast(request):
     response = HttpResponse(content_type='text/csv')
@@ -118,3 +163,26 @@ def forecast_sales_view(request):
     else:
         form = SalesFileForm()
     return render(request, 'sales/forecast_sales.html', {'form': form})
+
+
+from django.core.exceptions import ValidationError
+from sales_project.models import Product, SalesRecord
+
+def process_sales_file(file_path):
+    import pandas as pd
+    
+    df = pd.read_excel(file_path)
+
+    # Проверка наличия всех product_id в базе данных
+    existing_product_ids = set(Product.objects.values_list('id', flat=True))
+    for product_id in df['product_id']:
+        if product_id not in existing_product_ids:
+            raise ValidationError(f"Product ID {product_id} does not exist in the database")
+
+    # Сохранение данных
+    for _, row in df.iterrows():
+        SalesRecord.objects.create(
+            period=row['period'],
+            product_id=row['product_id'],
+            quantity=row['quantity']
+        )

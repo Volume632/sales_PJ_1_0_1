@@ -4,18 +4,19 @@ from sales_project.predictor import predict_sales
 
 
 
+# Функция для импорта данных о продажах
 def import_sales_data(file_path):
-    # Read the Excel file
     df = pd.read_excel(file_path)
-    
-    # Iterate over the rows and save them to the SalesRecord model
-    for index, row in df.iterrows():
-        product, created = Product.objects.get_or_create(name=row['Product Name'])
-        SalesRecord.objects.create(
-            product=product,
-            period=row['Period'],
-            quantity=row['Quantity']
-        )
+    for _, row in df.iterrows():
+        try:
+            product = Product.objects.get(id=row['id'])
+            SalesRecord.objects.update_or_create(
+                period=row['period'],
+                product=product,
+                defaults={'quantity': row['sales']}
+            )
+        except Product.DoesNotExist:
+            print(f"Product with ID {row['id']} not found in database.")
 
 def import_stock_data(file_path):
     # Read the Excel file
@@ -27,16 +28,30 @@ def import_stock_data(file_path):
         product.stock = row['Stock']
         product.save()
 
+# Функция для импорта данных о прайсах
 def import_supplier_data(file_path):
-    # Read the Excel file
     df = pd.read_excel(file_path)
-    
-    # Iterate over the rows and save them to the Supplier model
-    for index, row in df.iterrows():
-        Supplier.objects.create(
-            name=row['Supplier Name'],
-            contact_info=row['Contact Info']
+    for _, row in df.iterrows():
+        Product.objects.update_or_create(
+            id=row['id'],
+            defaults={
+                'name': row['product_name'],
+                'price1': row['price1'],
+                'price2': row['price2']
+            }
         )
-        product, created = Product.objects.get_or_create(name=row['Product Name'])
-        product.price = row['Price']
-        product.save()
+
+def process_sales_file(file_path):
+    df = pd.read_excel(file_path)
+
+    # Убедитесь, что данные соответствуют ожидаемой структуре
+    if 'product_id' not in df.columns:
+        raise ValueError("Неверная структура данных: отсутствует столбец 'product_id'.")
+
+    # Обработка данных и сохранение в базу данных
+    for _, row in df.iterrows():
+        SalesRecord.objects.create(
+            period=row['period'],
+            product_id=row['product_id'],
+            quantity=row['quantity']
+        )
