@@ -1,15 +1,14 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
-from .forms import SalesFileForm, SupplierFileForm, CustomUserCreationForm  # Импорт формы создания пользователя
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth import login, logout
 from django.http import HttpResponse
-import csv  # Импорт модуля для работы с CSV
-import pandas as pd  # Импорт pandas для обработки данных
+import csv
+import pandas as pd
 import logging
 from django.db import transaction
-from .forms import FileUploadForm
-
+from .forms import SalesFileForm, SupplierFileForm, CustomUserCreationForm, FileUploadForm
+from .models import SalesFile, StockFile, SupplierFile
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +24,7 @@ def logout_view(request):
 # Регистрация пользователя
 def register_view(request):
     if request.method == 'POST':
-        form = CustomUserCreationForm(request.POST)  # Использование формы CustomUserCreationForm
+        form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             form.save()
             messages.success(request, 'Account created successfully!')
@@ -46,16 +45,20 @@ def login_view(request):
         form = AuthenticationForm()
     return render(request, 'registration/login.html', {'form': form})
 
+# Страница выбора действий
+def dashboard(request):
+    return render(request, 'dashboard.html')
+
 # Загрузка файла продаж
 def upload_sales_file(request):
     if request.method == 'POST':
         form = SalesFileForm(request.POST, request.FILES)
         if form.is_valid():
-            form.save()  # Это автоматически сохранит файл в указанную директорию
-            messages.success(request, 'Файл успешно загружен!')
-            return redirect('home')  # После загрузки перенаправляем на главную страницу
+            form.save()
+            messages.success(request, 'Sales file uploaded successfully!')
+            return redirect('home')
         else:
-            messages.error(request, 'Ошибка загрузки файла. Попробуйте снова.')
+            messages.error(request, 'Error uploading sales file. Please try again.')
     else:
         form = SalesFileForm()
     return render(request, 'upload_sales_file.html', {'form': form})
@@ -69,7 +72,7 @@ def upload_supplier_file(request):
             messages.success(request, 'Supplier file uploaded successfully!')
             return redirect('home')
         else:
-            messages.error(request, 'Invalid form submission.')
+            messages.error(request, 'Error uploading supplier file. Please try again.')
     else:
         form = SupplierFileForm()
     return render(request, 'sales/upload_supplier_file.html', {'form': form})
@@ -88,13 +91,13 @@ def export_forecast(request):
 
     return response
 
-# Отображение страницы анализа ABC/XYZ (пример)
-def abc_xyz_analysis(request):
-    # Пример контекста для анализа
+# Отображение страницы анализа ABC/XYZ
+def abc_xyz_analysis(request, period):
+    # Пример данных для анализа
     abc_data = [{'product_id': 1, 'quantity': 100}]
     xyz_data = [{'product_id': 1, 'period': '2024-09', 'quantity': 50}]
 
-    context = {'abc_data': abc_data, 'xyz_data': xyz_data}
+    context = {'abc_data': abc_data, 'xyz_data': xyz_data, 'period': period}
     return render(request, 'abc_xyz_analysis.html', context)
 
 # Загрузка файла и обработка без сохранения в базу данных
@@ -139,9 +142,9 @@ def upload_stock_file(request):
             try:
                 stock_file = request.FILES['file']
                 if stock_file.name.endswith('.csv'):
-                    # Функция для обработки stock_file
                     process_stock_file(stock_file)
                     messages.success(request, 'Stock data uploaded successfully!')
+                    return redirect('home')
                 else:
                     messages.error(request, 'Please upload a valid CSV file.')
             except Exception as e:
@@ -156,3 +159,15 @@ def upload_stock_file(request):
 def process_stock_file(stock_file):
     # Добавьте логику для обработки файла stock_file
     pass
+
+def sales_forecast(request, months):
+    # Пример данных прогноза продаж
+    forecast_data = [{'month': months, 'forecast': 100 * int(months)}]
+    context = {'forecast_data': forecast_data, 'months': months}
+    return render(request, 'forecast.html', context)
+
+def supplier_order(request, months):
+    # Пример данных заказа поставщика
+    order_data = [{'month': months, 'order': 50 * int(months)}]
+    context = {'order_data': order_data, 'months': months}
+    return render(request, 'supplier_order.html', context)

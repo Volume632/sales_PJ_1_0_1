@@ -1,0 +1,32 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <title>Dashboard</title>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <h1>Dashboard</h1>
+            <div class="register-section">
+                <ul>
+                    <li><a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                </ul>
+            </div>
+        </div>
+    </header>
+    <main>
+        <h2>Actions</h2>
+        <ul>
+            <li><a href="{% url 'upload_sales_file' %}">Upload Sales File</a></li>
+            <li><a href="{% url 'upload_stock_file' %}">Upload Stock File</a></li>
+            <li><a href="{% url 'abc_xyz_analysis' period='all' %}">ABC-XYZ Analysis (All periods)</a></li>
+            <li><a href="{% url 'sales_forecast' months=1 %}">Sales Forecast (1 Month)</a></li>
+            <li><a href="{% url 'supplier_order' months=1 %}">Supplier Order (1 Month)</a></li>
+        </ul>
+    </main>
+</body>
+</html>

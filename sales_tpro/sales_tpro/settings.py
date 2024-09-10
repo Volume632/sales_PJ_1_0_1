@@ -9,6 +9,7 @@ environ.Env.read_env()  # Чтение переменных из .env файла
 # Настройки проекта
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
 # Секретный ключ
 SECRET_KEY = env('SECRET_KEY', default='fallback-secret-key')
 
@@ -61,11 +62,13 @@ MIDDLEWARE = [
 # Конфигурация корневого URL
 ROOT_URLCONF = 'sales_tpro.urls'
 
+
+
 # Настройки шаблонов
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')],  # Проверьте, что указана папка для шаблонов
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -104,12 +107,25 @@ USE_I18N = True
 USE_TZ = True
 
 # Статические файлы (CSS, JavaScript, изображения)
-STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'  # Добавлено для продакшена
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Медиафайлы (загружаемые пользователями файлы)
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # Автоматическое поле для новых моделей
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Настройки для поиска статических файлов
+STATICFILES_FINDERS = [
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+]
+
+# Автоматическая настройка для авторизации
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]

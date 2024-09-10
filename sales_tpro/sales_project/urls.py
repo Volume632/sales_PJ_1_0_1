@@ -1,16 +1,16 @@
 from django.urls import path
-from . import views  # Импортируем представления из текущего приложения
+from . import views 
+from django.contrib.auth.views import LogoutView
 
 urlpatterns = [
     path('', views.home, name='home'),
-    path('abc-xyz-analysis/', views.abc_xyz_analysis, name='abc_xyz_analysis'),
-    path('export-forecast/', views.export_forecast, name='export_forecast'),
-    path('login/', views.login_view, name='login'),
-    path('logout/', views.logout_view, name='logout'),
     path('register/', views.register_view, name='register'),
+    path('dashboard/', views.dashboard, name='dashboard'),
+    path('abc-xyz-analysis/<str:period>/', views.abc_xyz_analysis, name='abc_xyz_analysis'),
+    path('sales-forecast/<int:months>/', views.sales_forecast, name='sales_forecast'),
+    path('supplier-order/<int:months>/', views.supplier_order, name='supplier_order'),
     path('upload-sales/', views.upload_sales_file, name='upload_sales_file'),
     path('upload-stock/', views.upload_stock_file, name='upload_stock_file'),
     path('upload-supplier/', views.upload_supplier_file, name='upload_supplier_file'),
-    path('upload-file/', views.upload_file_view, name='upload_file_view'),  # Путь для загрузки файлов
-
+    path('logout/', LogoutView.as_view(), name='logout'),
 ]
