@@ -1,31 +1,48 @@
 from django import forms
-from .models import SalesFile, SupplierFile
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.models import User
+from .models import SalesFile, SupplierFile
 
+# Форма для регистрации нового пользователя
 class CustomUserCreationForm(UserCreationForm):
     class Meta:
         model = User
         fields = ['username', 'password1', 'password2']
+        labels = {
+            'username': 'Имя пользователя',
+            'password1': 'Пароль',
+            'password2': 'Подтверждение пароля'
+        }
+        help_texts = {
+            'username': 'Введите уникальное имя пользователя.',
+        }
 
+# Общая форма для загрузки файлов CSV
+class FileUploadForm(forms.Form):
+    file = forms.FileField(label='Выберите файл CSV')
+
+    def clean_file(self):
+        file = self.cleaned_data.get('file')
+        if not file.name.endswith('.csv'):
+            raise forms.ValidationError("Загружаемый файл должен быть формата .csv")
+        return file
+
+# Форма для загрузки файла с данными о продажах
 class SalesFileForm(forms.ModelForm):
     class Meta:
         model = SalesFile
-        fields = ['file']
+        fields = ['file']  # Только поле для файла
 
-class SupplierFileForm(forms.ModelForm):
+# Форма для загрузки файла с данными от поставщиков
+class SupplierFileForm(FileUploadForm):
     class Meta:
         model = SupplierFile
         fields = ['file']
+        labels = {'file': 'Загрузите файл с данными от поставщиков'}
 
-class ProductFileForm(forms.Form):
-    file = forms.FileField(label='Выберите файл Excel')
-
-class SalesFileUploadForm(forms.Form):
-    file = forms.FileField(label='Загрузить файл продаж (Excel)', help_text='Загрузите файл Excel с данными о продажах.')
-
-class StockFileUploadForm(forms.Form):
-    file = forms.FileField(label='Загрузить файл стоков (Excel)', help_text='Загрузите файл Excel с данными об остатках.')
-
-class SupplierPriceFileUploadForm(forms.Form):
-    file = forms.FileField(label='Загрузить файл прайса поставщика (Excel)', help_text='Загрузите файл Excel с данными о ценах от поставщика.')
+# Форма для аутентификации пользователя
+class CustomAuthenticationForm(AuthenticationForm):
+    def __init__(self, *args, **kwargs):
+        super(CustomAuthenticationForm, self).__init__(*args, **kwargs)
+        self.fields['username'].label = 'Имя пользователя'
+        self.fields['password'].label = 'Пароль'

@@ -1,35 +1,41 @@
-
 from pathlib import Path
-import dj_database_url
 import environ
-from dotenv import load_dotenv
 import os
 
-# Initialize environment variables
+# Инициализация переменных окружения
 env = environ.Env()
-environ.Env.read_env() 
+environ.Env.read_env()  # Чтение переменных из .env файла
 
-
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+# Настройки проекта
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Секретный ключ
+SECRET_KEY = env('SECRET_KEY', default='fallback-secret-key')
 
+# Отладочный режим
+DEBUG = env.bool('DEBUG', default=True)
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
+# Разрешенные хосты
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
 
-# SECURITY WARNING: keep the secret key used in production secret!
+# Настройки базы данных
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': env('DB_NAME', default='salesdb'),
+        'USER': env('DB_USER', default='salesuser'),
+        'PASSWORD': env('DB_PASSWORD', default='Volume632'),
+        'HOST': env('DB_HOST', default='localhost'),
+        'PORT': env('DB_PORT', default='5432'),
+    }
+}
 
+# Настройки безопасности
+SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=False)  # Перенаправление на HTTPS
+CSRF_COOKIE_SECURE = env.bool('CSRF_COOKIE_SECURE', default=False)  # Защита CSRF через HTTPS
+SESSION_COOKIE_SECURE = env.bool('SESSION_COOKIE_SECURE', default=False)  # Защита сессий через HTTPS
 
-
-SECRET_KEY = os.getenv('SECRET_KEY')
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DJANGO_DEBUG", "1").lower() in ("1", "true", "yes")
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
-
-
-# Application definition
+# Приложения Django
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -38,8 +44,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'sales_project',
+    # Добавьте дополнительные приложения по мере необходимости
 ]
 
+# Миддлвары
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -50,12 +58,14 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+# Конфигурация корневого URL
 ROOT_URLCONF = 'sales_tpro.urls'
 
+# Настройки шаблонов
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'sales_project/templates'],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],  # Проверьте, что указана папка для шаблонов
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -68,32 +78,10 @@ TEMPLATES = [
     },
 ]
 
+# WSGI-приложение
 WSGI_APPLICATION = 'sales_tpro.wsgi.application'
 
-
-# Database
-# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
-# Инициализация библиотеки django-environ
-env = environ.Env()
-environ.Env.read_env()  # Чтение переменных из .env файла
-
-# Настройка базы данных
-load_dotenv()
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-        'OPTIONS': {
-            'timeout': 20,  # Увеличьте тайм-аут подключения
-        },
-    }
-}
-# Password validation
-# https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
-
-# Password validation
+# Валидация паролей
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -109,18 +97,19 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-## Internationalization
+# Интернационализация
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.1/howto/static-files/
-
+# Статические файлы (CSS, JavaScript, изображения)
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'  # Добавлено для продакшена
 
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
+# Медиафайлы (загружаемые пользователями файлы)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+# Автоматическое поле для новых моделей
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

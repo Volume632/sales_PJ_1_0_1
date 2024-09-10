@@ -1,146 +1,40 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
-from .forms import SalesFileForm, SupplierFileForm, ProductFileForm
-from .models import SalesRecord, Product, Supplier
-from .utils import import_sales_data, import_stock_data, import_supplier_data
-import csv
-from django.http import HttpResponse
+from .forms import SalesFileForm, SupplierFileForm, CustomUserCreationForm  # Импорт формы создания пользователя
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth import login, logout
-from django.contrib.auth.forms import UserCreationForm
-from .utils import predict_sales
-import pandas as pd
-from sales_project.predictor import predict_sales
-from .models import SalesFile, SupplierFile
+from django.http import HttpResponse
+import csv  # Импорт модуля для работы с CSV
+import pandas as pd  # Импорт pandas для обработки данных
 import logging
-from django.core.exceptions import ValidationError
-from sales_project.models import Product, SalesRecord
+from django.db import transaction
+from .forms import FileUploadForm
 
+
+logger = logging.getLogger(__name__)
+
+# Главная страница
 def home(request):
     return render(request, 'home.html')
 
-
+# Логаут пользователя
 def logout_view(request):
     logout(request)
     return redirect('home')
 
-
+# Регистрация пользователя
 def register_view(request):
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+        form = CustomUserCreationForm(request.POST)  # Использование формы CustomUserCreationForm
         if form.is_valid():
             form.save()
             messages.success(request, 'Account created successfully!')
             return redirect('login')
     else:
-        form = UserCreationForm()
+        form = CustomUserCreationForm()
     return render(request, 'registration/register.html', {'form': form})
 
-def upload_sales_file(request):
-    if request.method == 'POST':
-        form = SalesFileForm(request.POST, request.FILES)
-        if form.is_valid():
-            sales_file = form.save()
-            import_sales_data(sales_file.file.path)
-            messages.success(request, 'Sales data uploaded and processed successfully!')
-            return redirect('home')
-    else:
-        form = SalesFileForm()
-    return render(request, 'sales/upload_sales.html', {'form': form})
-
-def upload_stock_file(request):
-    if request.method == 'POST':
-        form = ProductFileForm(request.POST, request.FILES)
-        if form.is_valid():
-            stock_file = request.FILES['file']
-            import_stock_data(stock_file.temporary_file_path())
-            messages.success(request, 'Stock data uploaded successfully!')
-            return redirect('home')
-    else:
-        form = ProductFileForm()
-    return render(request, 'sales/upload_stock.html', {'form': form})
-
-def upload_supplier_file(request):
-    if request.method == 'POST':
-        form = SupplierFileForm(request.POST, request.FILES)
-        if form.is_valid():
-            supplier_file = form.save()
-            import_supplier_data(supplier_file.file.path)
-            messages.success(request, 'Supplier data uploaded successfully!')
-            return redirect('home')
-    else:
-        form = SupplierFileForm()
-    return render(request, 'sales/upload_supplier.html', {'form': form})
-
-
-logger = logging.getLogger(__name__)
-
-def abc_xyz_analysis(request):
-    # Получаем все данные о продажах
-    sales_records = SalesRecord.objects.select_related('product').all()
-
-    # Преобразуем данные в DataFrame для анализа
-    sales_data = []
-    for record in sales_records:
-        sales_data.append({
-            'product_id': record.product.id,  # Используем 'product_id'
-            'product_name': record.product.name,
-            'price': record.product.price1 or record.product.price2,
-            'period': record.period,
-            'quantity': record.quantity
-        })
-
-    df = pd.DataFrame(sales_data)
-
-    # Выводим структуру DataFrame для отладки
-    print(df.head())
-    print(df.columns)
-
-    # Проверяем наличие всех необходимых столбцов
-    required_columns = ['product_id', 'product_name', 'price', 'period', 'quantity']
-    for column in required_columns:
-        if column not in df.columns:
-            raise ValueError(f"Неверная структура данных: отсутствует столбец '{column}'.")
-
-    # Приведение типов
-    df['quantity'] = pd.to_numeric(df['quantity'], errors='coerce')
-    df['price'] = pd.to_numeric(df['price'], errors='coerce')
-    df.dropna(subset=['quantity', 'price'], inplace=True)
-
-    # ABC анализ: группировка по продукту и подсчёт общего объёма продаж
-    abc_data = df.groupby('product_id').agg({'quantity': 'sum', 'price': 'mean'}).reset_index()
-
-    # XYZ анализ: группировка по периоду
-    xyz_data = df.groupby(['product_id', 'period']).agg({'quantity': 'sum'}).reset_index()
-
-    # Передаем данные в шаблон
-    context = {
-        'abc_data': abc_data,
-        'xyz_data': xyz_data
-    }
-    return render(request, 'abc_xyz_analysis.html', context)
-
-
-def export_forecast(request):
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="forecast.csv"'
-
-    writer = csv.writer(response)
-    writer.writerow(['Месяц', 'Прогноз'])
-
-    # Пример данных для прогноза
-    forecast_data = [
-        ['Сентябрь', 100],
-        ['Октябрь', 120],
-        ['Ноябрь', 140],
-]
-
-    for row in forecast_data:
-        writer.writerow(row)
-
-    return response
-
-
+# Вход пользователя
 def login_view(request):
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
@@ -152,37 +46,113 @@ def login_view(request):
         form = AuthenticationForm()
     return render(request, 'registration/login.html', {'form': form})
 
-def forecast_sales_view(request):
+# Загрузка файла продаж
+def upload_sales_file(request):
     if request.method == 'POST':
         form = SalesFileForm(request.POST, request.FILES)
         if form.is_valid():
-            sales_file = request.FILES['file']
-            data = pd.read_excel(sales_file)
-            forecast = predict_sales(data)
-            # Передайте прогноз в шаблон или сохраните
+            form.save()  # Это автоматически сохранит файл в указанную директорию
+            messages.success(request, 'Файл успешно загружен!')
+            return redirect('home')  # После загрузки перенаправляем на главную страницу
+        else:
+            messages.error(request, 'Ошибка загрузки файла. Попробуйте снова.')
     else:
         form = SalesFileForm()
-    return render(request, 'sales/forecast_sales.html', {'form': form})
+    return render(request, 'upload_sales_file.html', {'form': form})
 
+# Загрузка файла поставщиков
+def upload_supplier_file(request):
+    if request.method == 'POST':
+        form = SupplierFileForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Supplier file uploaded successfully!')
+            return redirect('home')
+        else:
+            messages.error(request, 'Invalid form submission.')
+    else:
+        form = SupplierFileForm()
+    return render(request, 'sales/upload_supplier_file.html', {'form': form})
 
-from django.core.exceptions import ValidationError
-from sales_project.models import Product, SalesRecord
+# Экспорт прогноза в CSV
+def export_forecast(request):
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="forecast.csv"'
 
-def process_sales_file(file_path):
-    import pandas as pd
-    
-    df = pd.read_excel(file_path)
+    writer = csv.writer(response)
+    writer.writerow(['Month', 'Forecast'])
+    forecast_data = [['September', 100], ['October', 120], ['November', 140]]
 
-    # Проверка наличия всех product_id в базе данных
-    existing_product_ids = set(Product.objects.values_list('id', flat=True))
-    for product_id in df['product_id']:
-        if product_id not in existing_product_ids:
-            raise ValidationError(f"Product ID {product_id} does not exist in the database")
+    for row in forecast_data:
+        writer.writerow(row)
 
-    # Сохранение данных
-    for _, row in df.iterrows():
-        SalesRecord.objects.create(
-            period=row['period'],
-            product_id=row['product_id'],
-            quantity=row['quantity']
-        )
+    return response
+
+# Отображение страницы анализа ABC/XYZ (пример)
+def abc_xyz_analysis(request):
+    # Пример контекста для анализа
+    abc_data = [{'product_id': 1, 'quantity': 100}]
+    xyz_data = [{'product_id': 1, 'period': '2024-09', 'quantity': 50}]
+
+    context = {'abc_data': abc_data, 'xyz_data': xyz_data}
+    return render(request, 'abc_xyz_analysis.html', context)
+
+# Загрузка файла и обработка без сохранения в базу данных
+def upload_file_view(request):
+    if request.method == 'POST':
+        if 'file' in request.FILES:
+            uploaded_file = request.FILES['file']
+            try:
+                if uploaded_file.name.endswith('.csv'):
+                    df = process_file(uploaded_file)
+                    if df is not None:
+                        return render(request, 'success.html', {'data': df.to_html()})
+                    else:
+                        return render(request, 'error.html', {'message': 'Error processing file'})
+                else:
+                    return render(request, 'error.html', {'message': 'Only CSV files are supported'})
+            except Exception as e:
+                logger.error(f"Error processing file: {str(e)}")
+                return render(request, 'error.html', {'message': f'Error processing file: {e}'})
+        else:
+            return render(request, 'error.html', {'message': 'No file uploaded'})
+    return render(request, 'upload.html')
+
+# Обработка файла (пример без сохранения в БД)
+def process_file(uploaded_file):
+    try:
+        df = pd.read_csv(uploaded_file, delimiter=';')
+        required_columns = {'quantity', 'product_id', 'period'}
+        current_columns = set(df.columns.str.strip().str.lower())
+        missing_columns = required_columns - current_columns
+        if missing_columns:
+            raise Exception(f"Missing required columns: {missing_columns}")
+        return df
+    except Exception as e:
+        raise Exception(f'Error reading CSV file: {e}')
+
+@transaction.atomic
+def upload_stock_file(request):
+    if request.method == 'POST':
+        form = FileUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            try:
+                stock_file = request.FILES['file']
+                if stock_file.name.endswith('.csv'):
+                    # Функция для обработки stock_file
+                    process_stock_file(stock_file)
+                    messages.success(request, 'Stock data uploaded successfully!')
+                else:
+                    messages.error(request, 'Please upload a valid CSV file.')
+            except Exception as e:
+                messages.error(request, f"Error uploading stock file: {str(e)}")
+                transaction.set_rollback(True)
+        else:
+            messages.error(request, 'Invalid form submission.')
+    else:
+        form = FileUploadForm()
+    return render(request, 'upload_stock.html', {'form': form})
+
+def process_stock_file(stock_file):
+    # Добавьте логику для обработки файла stock_file
+    pass
