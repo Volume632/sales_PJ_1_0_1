@@ -110,7 +110,6 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Медиафайлы (загружаемые пользователями файлы)
 MEDIA_URL = '/media/'
@@ -129,3 +128,7 @@ STATICFILES_FINDERS = [
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
+
+
+LOGIN_REDIRECT_URL = 'dashboard'  # Или другая страница после входа
+LOGOUT_REDIRECT_URL = 'login'  # Страница, на которую перенаправляется после выхода

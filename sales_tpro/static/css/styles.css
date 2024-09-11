@@ -1,40 +1,62 @@
-/* Основные стили для шапки сайта */
-header {
-    background-color: #f8f9fa; /* светлый фон для шапки */
-    padding: 20px;
-    border-bottom: 1px solid #dee2e6;
+body {
+    font-family: Arial, sans-serif;
 }
 
-/* Контейнер для шапки */
 .header-container {
+    background-color: #f8f9fa;
+    padding: 10px;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
-/* Стили для раздела регистрации */
-.register-section ul {
-    list-style-type: none;
+h1 {
     margin: 0;
-    padding: 0;
-    display: flex;
 }
 
-.register-section li {
+.register-section ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.register-section ul li {
+    display: inline;
     margin-left: 15px;
 }
 
-.register-section a {
-    text-decoration: none;
-    color: #007bff; /* цвет ссылок */
-    font-weight: bold;
+.form-container {
+    width: 300px;
+    margin: 50px auto;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #f9f9f9;
 }
 
-.register-section a:hover {
-    text-decoration: underline;
+.form-container h2 {
+    text-align: center;
 }
 
-/* Иконки FontAwesome */
-.fas {
-    margin-right: 5px;
+.btn-submit {
+    width: 100%;
+    padding: 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.btn-submit:hover {
+    background-color: #0056b3;
+}
+
+.alert {
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+    background-color: #f8d7da;
+    color: #721c24;
 }

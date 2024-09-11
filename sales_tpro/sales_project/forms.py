@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.models import User
-from .models import SalesFile, SupplierFile
+from .models import SalesFile, SupplierFile, StockFile
 
 # Форма для регистрации нового пользователя
 class CustomUserCreationForm(UserCreationForm):
@@ -46,3 +46,17 @@ class CustomAuthenticationForm(AuthenticationForm):
         super(CustomAuthenticationForm, self).__init__(*args, **kwargs)
         self.fields['username'].label = 'Имя пользователя'
         self.fields['password'].label = 'Пароль'
+
+# Форма для регистрации с email
+class UserRegistrationForm(UserCreationForm):
+    email = forms.EmailField()
+
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'password1', 'password2']
+
+# Форма для загрузки файла данных о запасах
+class StockFileUploadForm(forms.ModelForm):
+    class Meta:
+        model = StockFile
+        fields = ['file']

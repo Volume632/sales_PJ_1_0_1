@@ -9,6 +9,10 @@ import logging
 from django.db import transaction
 from .forms import SalesFileForm, SupplierFileForm, CustomUserCreationForm, FileUploadForm
 from .models import SalesFile, StockFile, SupplierFile
+from .forms import UserRegistrationForm
+
+
+
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +31,7 @@ def register_view(request):
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             form.save()
-            messages.success(request, 'Account created successfully!')
+            messages.success(request, 'Аккаунт успешно создан!')
             return redirect('login')
     else:
         form = CustomUserCreationForm()
@@ -93,10 +97,9 @@ def export_forecast(request):
 
 # Отображение страницы анализа ABC/XYZ
 def abc_xyz_analysis(request, period):
-    # Пример данных для анализа
     abc_data = [{'product_id': 1, 'quantity': 100}]
     xyz_data = [{'product_id': 1, 'period': '2024-09', 'quantity': 50}]
-
+    
     context = {'abc_data': abc_data, 'xyz_data': xyz_data, 'period': period}
     return render(request, 'abc_xyz_analysis.html', context)
 
@@ -142,32 +145,45 @@ def upload_stock_file(request):
             try:
                 stock_file = request.FILES['file']
                 if stock_file.name.endswith('.csv'):
-                    process_stock_file(stock_file)
-                    messages.success(request, 'Stock data uploaded successfully!')
+                    # Обработка файла
+                    StockFile.objects.create(file=stock_file)
+                    messages.success(request, 'Файл с данными о складе успешно загружен!')
                     return redirect('home')
                 else:
-                    messages.error(request, 'Please upload a valid CSV file.')
+                    messages.error(request, 'Пожалуйста, загрузите файл в формате CSV.')
             except Exception as e:
-                messages.error(request, f"Error uploading stock file: {str(e)}")
-                transaction.set_rollback(True)
+                messages.error(request, f"Ошибка при загрузке файла: {str(e)}")
         else:
-            messages.error(request, 'Invalid form submission.')
+            messages.error(request, 'Неверная отправка формы.')
     else:
         form = FileUploadForm()
     return render(request, 'upload_stock.html', {'form': form})
 
+
+
 def process_stock_file(stock_file):
-    # Добавьте логику для обработки файла stock_file
+    # Логика обработки файла stock_file
     pass
 
 def sales_forecast(request, months):
-    # Пример данных прогноза продаж
     forecast_data = [{'month': months, 'forecast': 100 * int(months)}]
     context = {'forecast_data': forecast_data, 'months': months}
     return render(request, 'forecast.html', context)
 
 def supplier_order(request, months):
-    # Пример данных заказа поставщика
     order_data = [{'month': months, 'order': 50 * int(months)}]
     context = {'order_data': order_data, 'months': months}
     return render(request, 'supplier_order.html', context)
+
+def register(request):
+    if request.method == 'POST':
+        form = UserRegistrationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            username = form.cleaned_data.get('username')
+            messages.success(request, f'Аккаунт создан для {username}. Теперь вы можете войти.')
+            login(request, user)  # Можно сразу логинить после регистрации
+            return redirect('dashboard')  # Перенаправление на кабинет пользователя
+    else:
+        form = UserRegistrationForm()
+    return render(request, 'users/register.html', {'form': form})
