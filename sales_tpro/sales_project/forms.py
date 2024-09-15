@@ -18,7 +18,7 @@ class CustomUserCreationForm(UserCreationForm):
         }
 
 # Общая форма для загрузки файлов CSV
-class FileUploadForm(forms.Form):
+class FileUploadForm(forms.ModelForm):  # Изменил на ModelForm для поддержки сохранения
     file = forms.FileField(label='Выберите файл CSV')
 
     def clean_file(self):
@@ -28,22 +28,23 @@ class FileUploadForm(forms.Form):
         return file
 
 # Форма для загрузки файла с данными о продажах
-class SalesFileForm(forms.ModelForm):
+class SalesFileForm(FileUploadForm):
     class Meta:
-        model = SalesFile
-        fields = ['file']  # Только поле для файла
+        model = SalesFile  # Указываем модель SalesFile
+        fields = ['file']
+        labels = {'file': 'Загрузите файл с данными о продажах'}
 
 # Форма для загрузки файла с данными от поставщиков
 class SupplierFileForm(FileUploadForm):
     class Meta:
-        model = SupplierFile
+        model = SupplierFile  # Указываем модель SupplierFile
         fields = ['file']
         labels = {'file': 'Загрузите файл с данными от поставщиков'}
 
 # Форма для аутентификации пользователя
 class CustomAuthenticationForm(AuthenticationForm):
     def __init__(self, *args, **kwargs):
-        super(CustomAuthenticationForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields['username'].label = 'Имя пользователя'
         self.fields['password'].label = 'Пароль'
 
@@ -56,7 +57,8 @@ class UserRegistrationForm(UserCreationForm):
         fields = ['username', 'email', 'password1', 'password2']
 
 # Форма для загрузки файла данных о запасах
-class StockFileUploadForm(forms.ModelForm):
+class StockFileUploadForm(FileUploadForm):
     class Meta:
-        model = StockFile
+        model = StockFile  # Указываем модель StockFile
         fields = ['file']
+        labels = {'file': 'Загрузите файл с данными о запасах'}

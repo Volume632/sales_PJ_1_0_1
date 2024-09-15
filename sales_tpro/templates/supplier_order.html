@@ -1,0 +1,13 @@
+<h2>Supplier Order for {{ months }} months</h2>
+<table>
+    <tr>
+        <th>Month</th>
+        <th>Order Quantity</th>
+    </tr>
+    {% for item in order_data %}
+    <tr>
+        <td>{{ item.month }}</td>
+        <td>{{ item.order }}</td>
+    </tr>
+    {% endfor %}
+</table>

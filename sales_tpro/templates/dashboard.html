@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<h2>Dashboard</h2>
+<ul class="list-group">
+    <li class="list-group-item"><a href="{% url 'upload_sales_file' %}">Upload Sales File</a></li>
+    <li class="list-group-item"><a href="{% url 'upload_stock_file' %}">Upload Stock File</a></li>
+    <li class="list-group-item"><a href="{% url 'abc_xyz_analysis' period='all' %}">ABC-XYZ Analysis</a></li>
+    <li class="list-group-item"><a href="{% url 'sales_forecast' months=3 %}">Sales Forecast</a></li>
+    <li class="list-group-item"><a href="{% url 'supplier_order' months=1 %}">Supplier Order</a></li>
+</ul>
+{% endblock %}

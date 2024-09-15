@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}ABC/XYZ Analysis{% endblock %}
+
+{% block content %}
+    <h1>ABC/XYZ Analysis for {{ period }}</h1>
+
+    <div>
+        <pre>{{ analysis_results|safe }}</pre>
+    </div>
+    
+    <table class="table table-bordered">
+        <thead class="thead-dark">
+            <tr>
+                <th>Product ID</th>
+                <th>Revenue</th>
+                <th>Quantity</th>
+                <th>Cumulative Revenue</th>
+                <th>Cumulative Revenue Percentage</th>
+                <th>ABC Category</th>
+                <th>Coefficient of Variation</th>
+                <th>XYZ Category</th>
+                <th>ABC-XYZ Category</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in analysis_results %}
+            <tr>
+                <td>{{ item.product_id }}</td>
+                <td>{{ item.revenue }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>{{ item.cumulative_revenue }}</td>
+                <td>{{ item.cumulative_revenue_percentage }}</td>
+                <td>{{ item.ABC }}</td>
+                <td>{{ item.coefficient_of_variation }}</td>
+                <td>{{ item.XYZ }}</td>
+                <td>{{ item.ABC_XYZ }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

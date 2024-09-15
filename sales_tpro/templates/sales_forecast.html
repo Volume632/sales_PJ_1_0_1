@@ -1,0 +1,13 @@
+<h2>Sales Forecast for {{ months }} months</h2>
+<table>
+    <tr>
+        <th>Month</th>
+        <th>Forecast</th>
+    </tr>
+    {% for item in forecast_data %}
+    <tr>
+        <td>{{ item.month }}</td>
+        <td>{{ item.forecast }}</td>
+    </tr>
+    {% endfor %}
+</table>
