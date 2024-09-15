@@ -7,9 +7,10 @@ import logging
 from .forms import SalesFileForm, SupplierFileForm, UserRegistrationForm, StockFileUploadForm
 from .models import SalesRecord, SupplierRecord, StockRecord
 from .abc_xyz_analysis import load_sales_data, load_supplier_data, abc_xyz_classification, calculate_profitability
-from .forecast_calculations import load_sales_data as load_forecast_sales_data, load_stock_data, calculate_forecast
 from django.conf import settings
 import os
+from .forecast_calculations import load_forecast_sales_data, load_stock_data, calculate_forecast
+
 
 logger = logging.getLogger(__name__)
 
@@ -150,8 +151,16 @@ def abc_xyz_analysis_view(request, period):
         return render(request, 'error.html', {'message': f"Ошибка при выполнении анализа: {str(e)}"})
 
 # Прогноз продаж
+import logging
+from django.shortcuts import render
+from .forecast_calculations import load_forecast_sales_data, load_stock_data, calculate_forecast
+
+# Настройка логгера
+logger = logging.getLogger(__name__)
+
 def sales_forecast_view(request, months):
     try:
+        # Пути к файлам
         sales_file_path = r'D:\Python\sales_PJ_1_0_1\sales_tpro\media\sales_files\sales_file.csv'
         stock_file_path = r'D:\Python\sales_PJ_1_0_1\sales_tpro\media\stock_files\Stock.csv'
 
@@ -167,19 +176,23 @@ def sales_forecast_view(request, months):
         forecast_df = calculate_forecast(sales_df, stock_df, months)
 
         # Убедитесь, что forecast_df содержит ожидаемые колонки
-        required_columns = [f'{month} Month' for month in range(1, months + 1)]
+        required_columns = [f'Month_{month}' for month in range(1, months + 1)]  # Обратите внимание на синтаксис
         missing_columns = [col for col in required_columns if col not in forecast_df.columns]
         if missing_columns:
             raise ValueError(f"Отсутствуют колонки в DataFrame прогноза: {', '.join(missing_columns)}")
 
+        # Подготовка данных для шаблона
         context = {
             'forecast_results': forecast_df.to_dict(orient='records'),
         }
 
+        # Отображение шаблона
         return render(request, 'sales_forecast.html', context)
     except Exception as e:
+        # Логирование ошибки
         logger.error(f"Ошибка при прогнозировании продаж: {e}")
         return render(request, 'error.html', {'message': f'Ошибка при прогнозировании продаж: {str(e)}'})
+
 
 
 

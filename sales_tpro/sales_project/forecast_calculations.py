@@ -1,6 +1,6 @@
 import pandas as pd
 
-def load_sales_data(file_path):
+def load_forecast_sales_data(file_path):
     sales_df = pd.read_csv(file_path, delimiter=';')
     if sales_df.empty:
         raise ValueError("Файл продаж пустой.")
@@ -21,11 +21,12 @@ def calculate_forecast(sales_df, stock_df, months=3):
     
     # Создаем прогноз для каждого месяца
     for month in range(1, months + 1):
-        forecast_df[f'{month} Month'] = forecast_df['quantity'] / months
+        forecast_df[f'Month_{month}'] = (forecast_df['quantity'] / months).round()
 
     # Проверяем наличие столбцов
-    required_columns = [f'{month} Month' for month in range(1, months + 1)]
+    required_columns = [f'Month_{month}' for month in range(1, months + 1)]
     print("DataFrame columns after forecast:", forecast_df.columns)
+    
     for col in required_columns:
         if col not in forecast_df.columns:
             forecast_df[col] = 0
