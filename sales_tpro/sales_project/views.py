@@ -7,6 +7,7 @@ import logging
 from .forms import SalesFileForm, SupplierFileForm, UserRegistrationForm, StockFileUploadForm
 from .models import SalesRecord, SupplierRecord, StockRecord
 from .abc_xyz_analysis import load_sales_data, load_supplier_data, abc_xyz_classification, calculate_profitability
+from .forecast_calculations import load_sales_data as load_forecast_sales_data, load_stock_data, calculate_forecast
 from django.conf import settings
 import os
 
@@ -113,17 +114,13 @@ def process_supplier_file(file):
         logger.error(f"Ошибка при обработке файла поставщиков: {str(e)}")
 
 # Отображение страницы анализа ABC/XYZ
-import os
-
 def abc_xyz_analysis_view(request, period):
     try:
         logger.info("Начало анализа ABC-XYZ")
         
-        # Замените этот путь на путь к файлу, который вы используете
-        sales_file_path = r'D:\Python\sales_PJ_1_0_1\sales_tpro\media\sales_files\sales_file.csv'
-        supplier_file_path = r'D:\Python\sales_PJ_1_0_1\sales_tpro\media\supplier_files\supplier_file.csv'
+        sales_file_path = os.path.join(settings.MEDIA_ROOT, 'sales_files', 'sales_file.csv')
+        supplier_file_path = os.path.join(settings.MEDIA_ROOT, 'supplier_files', 'supplier_file.csv')
         
-        # Проверка наличия файлов
         def check_file_exists(file_path):
             if os.path.isfile(file_path):
                 return True
@@ -136,21 +133,15 @@ def abc_xyz_analysis_view(request, period):
         if not check_file_exists(supplier_file_path):
             raise FileNotFoundError(f"Файл поставщиков не найден: {supplier_file_path}")
         
-        # Загрузка данных
         sales_data = load_sales_data(sales_file_path)
         supplier_data = load_supplier_data(supplier_file_path)
         
-        # Проверка загруженных данных
         if sales_data is None or supplier_data is None:
             raise ValueError("Не удалось загрузить данные.")
         
-        # Рассчет доходности
         profitability_data = calculate_profitability(sales_data, supplier_data)
-        
-        # ABC-XYZ классификация
         analysis_results = abc_xyz_classification(profitability_data)
         
-        # Передача результатов в шаблон
         context = {'period': period, 'analysis_results': analysis_results.to_dict(orient='records')}
         logger.info(f"Результаты анализа: {context['analysis_results']}")
         return render(request, 'abc_xyz_analysis.html', context)
@@ -159,28 +150,38 @@ def abc_xyz_analysis_view(request, period):
         return render(request, 'error.html', {'message': f"Ошибка при выполнении анализа: {str(e)}"})
 
 # Прогноз продаж
-def sales_forecast(request, months):
+def sales_forecast_view(request, months):
     try:
-        # Пример простого прогноза продаж
-        forecast_data = [{'month': f'Month {i + 1}', 'forecast': 100 * (i + 1)} for i in range(months)]
-        
-        # Передача данных в шаблон
-        context = {'forecast_data': forecast_data, 'months': months}
-        return render(request, 'forecast.html', context)
-    except Exception as e:
-        return render(request, 'error.html', {'message': f'Ошибка при прогнозе продаж: {e}'})
+        sales_file_path = r'D:\Python\sales_PJ_1_0_1\sales_tpro\media\sales_files\sales_file.csv'
+        stock_file_path = r'D:\Python\sales_PJ_1_0_1\sales_tpro\media\stock_files\Stock.csv'
 
-# Заказ у поставщика
-def supplier_order(request, months):
-    try:
-        # Пример заказа поставщику
-        order_data = [{'month': f'Month {i + 1}', 'order': 50 * (i + 1)} for i in range(months)]
-        
-        # Передача данных в шаблон
-        context = {'order_data': order_data, 'months': months}
-        return render(request, 'supplier_order.html', context)
+        # Загрузка данных
+        sales_df = load_forecast_sales_data(sales_file_path)
+        stock_df = load_stock_data(stock_file_path)
+
+        # Убедитесь, что 'product_id' имеет одинаковый тип в обоих DataFrame
+        sales_df['product_id'] = sales_df['product_id'].astype(str)
+        stock_df['product_id'] = stock_df['product_id'].astype(str)
+
+        # Рассчитайте прогноз
+        forecast_df = calculate_forecast(sales_df, stock_df, months)
+
+        # Убедитесь, что forecast_df содержит ожидаемые колонки
+        required_columns = [f'{month} Month' for month in range(1, months + 1)]
+        missing_columns = [col for col in required_columns if col not in forecast_df.columns]
+        if missing_columns:
+            raise ValueError(f"Отсутствуют колонки в DataFrame прогноза: {', '.join(missing_columns)}")
+
+        context = {
+            'forecast_results': forecast_df.to_dict(orient='records'),
+        }
+
+        return render(request, 'sales_forecast.html', context)
     except Exception as e:
-        return render(request, 'error.html', {'message': f'Ошибка при создании заказа: {e}'})
+        logger.error(f"Ошибка при прогнозировании продаж: {e}")
+        return render(request, 'error.html', {'message': f'Ошибка при прогнозировании продаж: {str(e)}'})
+
+
 
 # Загрузка файла склада
 def upload_stock_file(request):
@@ -204,9 +205,19 @@ def process_stock_file(file):
         for index, row in df.iterrows():
             StockRecord.objects.create(
                 product_id=row['product_id'],
-                quantity=row['quantity'],
-                date=pd.to_datetime(row['period']).date()
+                quantity=row['stock']  # Примечание: здесь исправлено 'quantity' на 'stock'
             )
         logger.info("Файл склада успешно обработан")
     except Exception as e:
         logger.error(f"Ошибка при обработке файла склада: {str(e)}")
+
+# Страница заказа поставок
+def supplier_order_view(request, months):
+    try:
+        # Вы можете добавить логику для обработки заказа поставок здесь.
+        # Временный контекст для примера
+        context = {'months': months}
+        return render(request, 'supplier_order.html', context)
+    except Exception as e:
+        logger.error(f"Ошибка при обработке заказа поставок: {e}")
+        return render(request, 'error.html', {'message': f'Ошибка при обработке заказа поставок: {str(e)}'})
