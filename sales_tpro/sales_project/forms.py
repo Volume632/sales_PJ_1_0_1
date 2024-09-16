@@ -17,8 +17,22 @@ class CustomUserCreationForm(UserCreationForm):
             'username': 'Введите уникальное имя пользователя.',
         }
 
+# Форма для регистрации с email
+class UserRegistrationForm(UserCreationForm):
+    email = forms.EmailField(label="Email", required=True)
+
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'password1', 'password2']
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if User.objects.filter(email=email).exists():
+            raise forms.ValidationError('Этот email уже используется.')
+        return email
+
 # Общая форма для загрузки файлов CSV
-class FileUploadForm(forms.ModelForm):  # Изменил на ModelForm для поддержки сохранения
+class FileUploadForm(forms.ModelForm):
     file = forms.FileField(label='Выберите файл CSV')
 
     def clean_file(self):
@@ -28,18 +42,25 @@ class FileUploadForm(forms.ModelForm):  # Изменил на ModelForm для �
         return file
 
 # Форма для загрузки файла с данными о продажах
-class SalesFileForm(FileUploadForm):
+class SalesFileUploadForm(FileUploadForm):
     class Meta:
-        model = SalesFile  # Указываем модель SalesFile
+        model = SalesFile
         fields = ['file']
         labels = {'file': 'Загрузите файл с данными о продажах'}
 
 # Форма для загрузки файла с данными от поставщиков
-class SupplierFileForm(FileUploadForm):
+class SupplierFileUploadForm(FileUploadForm):
     class Meta:
-        model = SupplierFile  # Указываем модель SupplierFile
+        model = SupplierFile
         fields = ['file']
         labels = {'file': 'Загрузите файл с данными от поставщиков'}
+
+# Форма для загрузки файла данных о запасах
+class StockFileUploadForm(FileUploadForm):
+    class Meta:
+        model = StockFile
+        fields = ['file']
+        labels = {'file': 'Загрузите файл с данными о запасах'}
 
 # Форма для аутентификации пользователя
 class CustomAuthenticationForm(AuthenticationForm):
@@ -47,18 +68,3 @@ class CustomAuthenticationForm(AuthenticationForm):
         super().__init__(*args, **kwargs)
         self.fields['username'].label = 'Имя пользователя'
         self.fields['password'].label = 'Пароль'
-
-# Форма для регистрации с email
-class UserRegistrationForm(UserCreationForm):
-    email = forms.EmailField()
-
-    class Meta:
-        model = User
-        fields = ['username', 'email', 'password1', 'password2']
-
-# Форма для загрузки файла данных о запасах
-class StockFileUploadForm(FileUploadForm):
-    class Meta:
-        model = StockFile  # Указываем модель StockFile
-        fields = ['file']
-        labels = {'file': 'Загрузите файл с данными о запасах'}

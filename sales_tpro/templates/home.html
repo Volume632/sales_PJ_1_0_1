@@ -1,7 +1,16 @@
 {% extends 'base.html' %}
-{% block title %}Home{% endblock %}
+
 {% block content %}
-<h1 class="text-center">Welcome to the Sales Analysis project</h1>
-<p class="text-center">Upload files, view analysis, and generate forecasts.</p>
-<a href="{% url 'dashboard' %}" class="btn btn-primary d-block mx-auto">Go to Dashboard</a>
+<div class="container mt-5">
+    <h1>Welcome to Milwaukee Sales Forecasts and Analysis</h1>
+    <p>Добро пожаловать на главную страницу! Здесь вы можете загрузить файлы и просмотреть отчеты.</p>
+
+    {% if user.is_authenticated %}
+        <!-- Если пользователь аутентифицирован -->
+        <a href="{% url 'dashboard' %}" class="btn btn-primary">Go to Dashboard</a>
+    {% else %}
+        <!-- Если пользователь не аутентифицирован -->
+        <a href="{% url 'login' %}" class="btn btn-primary">Sign in</a>
+    {% endif %}
+</div>
 {% endblock %}

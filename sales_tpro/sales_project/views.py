@@ -4,12 +4,13 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth import login, logout
 import pandas as pd
 import logging
-from .forms import SalesFileForm, SupplierFileForm, UserRegistrationForm, StockFileUploadForm
+from .forms import SalesFileUploadForm, SupplierFileUploadForm, UserRegistrationForm, StockFileUploadForm
 from .models import SalesRecord, SupplierRecord, StockRecord
 from .abc_xyz_analysis import load_sales_data, load_supplier_data, abc_xyz_classification, calculate_profitability
 from django.conf import settings
 import os
 from .forecast_calculations import load_forecast_sales_data, load_stock_data, calculate_forecast
+from django.contrib.auth.decorators import login_required
 
 
 logger = logging.getLogger(__name__)
@@ -35,6 +36,11 @@ def register_view(request):
         form = UserRegistrationForm()
     return render(request, 'registration/register.html', {'form': form})
 
+def custom_logout_view(request):
+    logout(request)
+    return redirect('home')  # Перенаправляем на главную страницу после выхода
+
+
 # Вход пользователя
 def login_view(request):
     if request.method == 'POST':
@@ -42,19 +48,22 @@ def login_view(request):
         if form.is_valid():
             user = form.get_user()
             login(request, user)
-            return redirect('home')
+            return redirect('dashboard')
+        else:
+            messages.error(request, 'Неверное имя пользователя или пароль.')
     else:
         form = AuthenticationForm()
     return render(request, 'registration/login.html', {'form': form})
 
-# Страница выбора действий
-def dashboard(request):
+# Страница выбора действий (Dashboard)
+@login_required(login_url='login')
+def dashboard_view(request):
     return render(request, 'dashboard.html')
 
 # Загрузка файла продаж
 def upload_sales_file(request):
     if request.method == 'POST':
-        form = SalesFileForm(request.POST, request.FILES)
+        form = SalesFileUploadForm(request.POST, request.FILES)
         if form.is_valid():
             form.save()
             process_sales_file(request.FILES['file'])  # Обработка файла после загрузки
@@ -63,13 +72,13 @@ def upload_sales_file(request):
         else:
             messages.error(request, 'Ошибка при загрузке файла продаж. Пожалуйста, попробуйте еще раз.')
     else:
-        form = SalesFileForm()
+        form = SalesFileUploadForm()
     return render(request, 'upload_sales_file.html', {'form': form})
 
 # Загрузка файла поставщиков
 def upload_supplier_file(request):
     if request.method == 'POST':
-        form = SupplierFileForm(request.POST, request.FILES)
+        form = SupplierFileUploadForm(request.POST, request.FILES)
         if form.is_valid():
             form.save()
             process_supplier_file(request.FILES['file'])  # Обработка файла после загрузки
@@ -78,7 +87,7 @@ def upload_supplier_file(request):
         else:
             messages.error(request, 'Ошибка при загрузке файла поставщиков. Пожалуйста, попробуйте еще раз.')
     else:
-        form = SupplierFileForm()
+        form = SupplierFileUploadForm()
     return render(request, 'upload_supplier_file.html', {'form': form})
 
 # Обработка файла продаж
@@ -151,22 +160,19 @@ def abc_xyz_analysis_view(request, period):
         return render(request, 'error.html', {'message': f"Ошибка при выполнении анализа: {str(e)}"})
 
 # Прогноз продаж
-import logging
-from django.shortcuts import render
-from .forecast_calculations import load_forecast_sales_data, load_stock_data, calculate_forecast
-
-# Настройка логгера
-logger = logging.getLogger(__name__)
-
 def sales_forecast_view(request, months):
     try:
         # Пути к файлам
-        sales_file_path = r'D:\Python\sales_PJ_1_0_1\sales_tpro\media\sales_files\sales_file.csv'
-        stock_file_path = r'D:\Python\sales_PJ_1_0_1\sales_tpro\media\stock_files\Stock.csv'
+        sales_file_path = os.path.join(settings.MEDIA_ROOT, 'sales_files', 'sales_file.csv')
+        stock_file_path = os.path.join(settings.MEDIA_ROOT, 'stock_files', 'Stock.csv')
 
         # Загрузка данных
         sales_df = load_forecast_sales_data(sales_file_path)
         stock_df = load_stock_data(stock_file_path)
+
+        # Отладочные сообщения
+        print("Sales DataFrame head:\n", sales_df.head())
+        print("Stock DataFrame head:\n", stock_df.head())
 
         # Убедитесь, что 'product_id' имеет одинаковый тип в обоих DataFrame
         sales_df['product_id'] = sales_df['product_id'].astype(str)
@@ -176,10 +182,13 @@ def sales_forecast_view(request, months):
         forecast_df = calculate_forecast(sales_df, stock_df, months)
 
         # Убедитесь, что forecast_df содержит ожидаемые колонки
-        required_columns = [f'Month_{month}' for month in range(1, months + 1)]  # Обратите внимание на синтаксис
+        required_columns = [f'Month_{month}' for month in range(1, months + 1)]
         missing_columns = [col for col in required_columns if col not in forecast_df.columns]
         if missing_columns:
             raise ValueError(f"Отсутствуют колонки в DataFrame прогноза: {', '.join(missing_columns)}")
+
+        # Отладочные сообщения
+        print("Forecast DataFrame head:\n", forecast_df.head())
 
         # Подготовка данных для шаблона
         context = {
@@ -192,8 +201,6 @@ def sales_forecast_view(request, months):
         # Логирование ошибки
         logger.error(f"Ошибка при прогнозировании продаж: {e}")
         return render(request, 'error.html', {'message': f'Ошибка при прогнозировании продаж: {str(e)}'})
-
-
 
 
 # Загрузка файла склада

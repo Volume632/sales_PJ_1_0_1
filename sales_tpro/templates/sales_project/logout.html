@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logged Out</title>
+    <!-- Подключение Bootstrap -->
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+    <!-- Подключение дополнительных стилей -->
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+    <div class="container mt-4">
+        <h1>Вы вышли из системы</h1>
+        <p>Вы успешно вышли из системы. Теперь вы можете <a href="{% url 'login' %}">войти снова</a> или <a href="{% url 'register' %}">зарегистрироваться</a>.</p>
+        <a class="btn btn-primary" href="{% url 'home' %}">На главную</a>
+    </div>
+</body>
+</html>

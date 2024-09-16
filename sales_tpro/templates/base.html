@@ -14,6 +14,22 @@
     
     <!-- Подключение FontAwesome (если нужно) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+    <!-- Стили для аватара -->
+    <style>
+        .avatar-circle {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #007bff; /* Цвет фона для аватара */
+            color: white; /* Цвет текста */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+    </style>
 </head>
 <body>
     <!-- Навигационная панель -->
@@ -25,21 +41,34 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'abc_xyz_analysis' period='all' %}">ABC/XYZ Analysis</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'sales_forecast' months=1 %}">Sales Forecast</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'login' %}">Login</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'register' %}">Register</a>
-                    </li>
+                    {% if user.is_authenticated %}
+                        <!-- Отображение аватара с выпадающим меню для выхода -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <!-- Аватар с первой буквой имени пользователя -->
+                                <div class="avatar-circle">
+                                    <span class="initials">{{ user.username|slice:":1"|upper }}</span>
+                                </div>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                                <li>
+                                    <!-- Форма для выхода -->
+                                    <form method="POST" action="{% url 'logout' %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="dropdown-item">Sign out</button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <!-- Если пользователь не аутентифицирован, показываем ссылки на регистрацию и вход -->
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'login' %}">Sign in</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'register' %}">Sign up</a>
+                        </li>
+                    {% endif %}
                 </ul>
             </div>
         </div>
